@@ -32,22 +32,23 @@ class Synthe:
         self._kurucz_bin_path = os.path.join(self._kurucz_directory, 'bin')
         self._atomic_data_path = os.path.join(self._kurucz_directory, "atomic_data")
 
-    def get_spectrum(self, model, parameters=None, quiet=False):
+    def get_spectrum(self, model, parameters=None, linelist="gfall08oct17.dat", quiet=False):
         self.model = copy.deepcopy(model)
+        self.linelist = copy.deepcopy(linelist)
         if parameters is not None:
             self.model.parameters.get_synthe_parameters(parameters,quiet=quiet)
-        spectrum = self._create_temp_direcotry_and_run_SYNTHE(self.model)
+        spectrum = self._create_temp_directory_and_run_SYNTHE(self.model,self.linelist)
         return spectrum
 
-    def _create_temp_direcotry_and_run_SYNTHE(self, model):
+    def _create_temp_directory_and_run_SYNTHE(self, model, linelist):
         with tempfile.TemporaryDirectory(prefix="synthe_") as tmpdirname:
-            spectrum = self._compute_spectrum(tmpdirname, model)
+            spectrum = self._compute_spectrum(tmpdirname, model, linelist)
         return spectrum 
 
-    def _compute_spectrum(self, tmpdirname, model):
+    def _compute_spectrum(self, tmpdirname, model, linelist):
         self._run_xnfpelsyn(tmpdirname, model)
         self._run_synbeg(tmpdirname, model)
-        self._run_rline2(tmpdirname, model) #  rgfalllinesnew.for  ?
+        self._run_rline2(tmpdirname, model, linelist) #  rgfalllinesnew.for  ?
         # self._run_rmolecasc(tmpdirname, model) # Optionally! Include molecular lines
         self._run_synthe(tmpdirname, model)
         self._run_spectrv(tmpdirname, model)
@@ -74,9 +75,9 @@ class Synthe:
                                 self._get_synbeg_input(model)
                                 )
 
-    def _run_rline2(self, tmpdirname, model):
+    def _run_rline2(self, tmpdirname, model, linelist):
         # os.symlink(os.path.join(self._atomic_data_path,"lines","gf0600.100"), os.path.join(tmpdirname,"fort.11"))
-        os.symlink(os.path.join(self._atomic_data_path,"lines","gfall08oct17.dat"), os.path.join(tmpdirname,"fort.11"))
+        os.symlink(os.path.join(self._atomic_data_path,"lines",linelist), os.path.join(tmpdirname,"fort.11"))
         self._call_external_code(tmpdirname,
                                 os.path.join(self._kurucz_bin_path, "rline2.exe")
                                 )
